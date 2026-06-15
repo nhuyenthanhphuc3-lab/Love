@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Anh yêu em  Giang</title>
+<style>
+  :root{
+    --pink-1:#ffd1e3;
+    --pink-2:#ff80b3;
+    --pink-3:#ff4d8d;
+    --pink-4:#c2185b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;font-family:'Segoe UI',Roboto,sans-serif;color:#fff;background:linear-gradient(180deg,#ffe6f0 0%,#ff8ab8 60%,#c2185b 100%)}
+  #c{position:fixed;inset:0;display:block;touch-action:none}
+  .overlay{position:fixed;inset:0;pointer-events:none;z-index:5}
+  .center{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:auto}
+
+  /* Start button */
+  #startBtn{
+    pointer-events:auto;
+    padding:22px 56px;font-size:28px;font-weight:700;letter-spacing:2px;
+    color:#fff;background:linear-gradient(135deg,var(--pink-2),var(--pink-4));
+    border:none;border-radius:999px;cursor:pointer;
+    box-shadow:0 10px 40px rgba(194,24,91,.5),0 0 0 0 rgba(255,128,179,.7);
+    animation:pulse 1.6s infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 10px 40px rgba(194,24,91,.5),0 0 0 0 rgba(255,128,179,.7)}
+    70%{box-shadow:0 10px 40px rgba(194,24,91,.5),0 0 0 30px rgba(255,128,179,0)}
+    100%{box-shadow:0 10px 40px rgba(194,24,91,.5),0 0 0 0 rgba(255,128,179,0)}
+  }
+
+  /* Lyrics */
+  #lyrics{
+    position:fixed;left:0;right:0;bottom:8%;
+    text-align:center;font-size:clamp(20px,4.5vw,34px);
+    font-weight:600;letter-spacing:1px;
+    text-shadow:0 2px 12px rgba(194,24,91,.7),0 0 30px rgba(255,255,255,.3);
+    padding:0 20px;opacity:0;transition:opacity .6s;
+    color:#fff;font-style:italic;
+    z-index:6;pointer-events:none;
+  }
+  #lyrics.show{opacity:1}
+
+  /* Choice buttons */
+  #choice{position:fixed;inset:0;z-index:10;display:none;pointer-events:none}
+  #choice.show{display:block}
+  .cbtn{
+    position:absolute;pointer-events:auto;
+    padding:20px 44px;font-size:24px;font-weight:700;
+    border:none;border-radius:999px;cursor:pointer;
+    transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+    box-shadow:0 8px 28px rgba(0,0,0,.25);
+  }
+  #yesBtn{
+    left:50%;top:45%;transform:translate(-50%,-50%);
+    background:linear-gradient(135deg,#ff4d8d,#c2185b);color:#fff;
+    animation:yesGlow 1.4s infinite;
+  }
+  @keyframes yesGlow{
+    0%,100%{box-shadow:0 8px 28px rgba(194,24,91,.5),0 0 0 0 rgba(255,77,141,.6)}
+    50%{box-shadow:0 8px 28px rgba(194,24,91,.5),0 0 0 22px rgba(255,77,141,0)}
+  }
+  #noBtn{
+    left:50%;top:62%;transform:translate(-50%,-50%);
+    background:#fff;color:#c2185b;
+  }
+
+  #title{
+    position:fixed;top:24px;left:0;right:0;text-align:center;
+    font-size:clamp(18px,3.2vw,26px);font-weight:700;letter-spacing:3px;
+    text-shadow:0 2px 10px rgba(194,24,91,.6);
+    z-index:6;pointer-events:none;opacity:0;transition:opacity .8s;
+  }
+  #title.show{opacity:1}
+
+  #finalMsg{
+    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:18px;
+    font-size:clamp(28px,6vw,52px);font-weight:800;text-align:center;
+    text-shadow:0 4px 24px rgba(194,24,91,.8);
+    opacity:0;transition:opacity 1.2s;pointer-events:none;z-index:7;padding:20px;
+  }
+  #finalMsg.show{opacity:1}
+  #finalMsg .sub{font-size:.5em;font-weight:500;opacity:.9}
+
+  /* Heart particles flying in */
+  .flyChar{
+    position:fixed;color:#fff;font-weight:700;
+    text-shadow:0 0 8px var(--pink-3),0 0 16px var(--pink-3);
+    pointer-events:none;z-index:4;will-change:transform,opacity;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="title"> Giang ơi </div>
+
+<div class="center" id="startWrap">
+  <button id="startBtn">BẮT ĐẦU </button>
+</div>
+
+<div id="lyrics"></div>
+
+<div id="choice">
+  <button class="cbtn" id="yesBtn">Đồng ý </button>
+  <button class="cbtn" id="noBtn">Không </button>
+</div>
+
+<div id="finalMsg">
+  <div> Mãi mãi là của nhau </div>
+  <div class="sub">Giang ơi, anh yêu em </div>
+</div>
+
+<!-- ===== CẤU HÌNH — Sửa ở đây ===== -->
+<script>
+  // 🎵 DÁN LINK NHẠC MP3 CỦA MÀY VÀO ĐÂY (link trực tiếp .mp3, không phải YouTube)
+  // Ví dụ: "https://example.com/remix.mp3"
+  // Nếu để trống, lyrics vẫn chạy theo timer mặc định.
+  const MUSIC_URL =  "https://files.catbox.moe/qo3tpk.mp3";
+
+  // ⏱ Lyrics — MỖI CÂU có thời gian RIÊNG:
+  //   in  = giây bắt đầu HIỆN ra
+  //   out = giây bắt đầu BIẾN MẤT
+  // Chỉnh thoải mái cho khớp nhạc remix của mày.
+  const LYRICS = [
+  { in: 2.0, out: 3.6, text: "Chỉ muốn nói đôi lời" },
+  { in: 3.6, out: 5.6, text: "Từ trái tim này người ơi" },
+  { in: 5.6, out: 8.2, text: "Đừng vội vàng chờ anh theo với" },
+  { in: 8.2, out: 9.6, text: "Ngại ngùng làm gì" },
+  { in: 9.6, out: 11.3, text: "Một lần thôi em hỡi" },
+  { in: 11.3, out: 12.9, text: "Rộn ràng nhịp tim" },
+  { in: 12.9, out: 15.5, text: "Vì anh đã trót yêu em rồi" },
+
+  { in: 15.5, out: 16.8, text: "Lời ngọt ngào từ em cô bé" },
+  { in: 16.8, out: 18.3, text: "Nhận lời từ giờ" },
+  { in: 18.3, out: 20.4, text: "Làm người yêu anh nhé" },
+  { in: 20.4, out: 22.1, text: "Chỉ cần vậy thôi" },
+  { in: 22.1, out: 25.8, text: "Và anh sẽ mãi yêu em trọn đời ❤" },
+];
+</script>
+
+<!-- Three.js + OrbitControls (ES modules via importmap) -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+window.THREE = THREE;
+window.OrbitControls = OrbitControls;
+// ============ Audio ============
+let audio = null;
+function startAudio(){
+  if(!MUSIC_URL) return;
+  if(audio) return;
+  audio = new Audio(MUSIC_URL);
+  audio.loop = true;
+  audio.volume = 0.85;
+  audio.play().catch(e=>console.warn("audio:",e));
+}
+
+// ============ Three.js setup ============
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.set(0, 0, 38);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.enablePan = false;
+controls.minDistance = 12;
+controls.maxDistance = 80;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 1.0;
+
+// Pink ambient lights (we mostly use sprites, but keep them for any meshes)
+scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+const pLight = new THREE.PointLight(0xff80b3, 2, 200);
+pLight.position.set(0,20,30); scene.add(pLight);
+
+window.addEventListener('resize', ()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ============ Text sprite helper ============
+const spriteCache = {};
+function makeTextSprite(text, color="#ffffff", glow="#ff4d8d", size=128){
+  const key = text+"|"+color+"|"+glow+"|"+size;
+  if(spriteCache[key]) return spriteCache[key].clone();
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = size;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0,0,size,size);
+  ctx.font = `bold ${Math.floor(size*0.42)}px "Segoe UI", Roboto, sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor = glow; ctx.shadowBlur = size*0.25;
+  ctx.fillStyle = glow;
+  ctx.fillText(text, size/2, size/2);
+  ctx.shadowBlur = size*0.12;
+  ctx.fillStyle = color;
+  ctx.fillText(text, size/2, size/2);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.anisotropy = 4;
+  const mat = new THREE.SpriteMaterial({map:tex, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending});
+  const sp = new THREE.Sprite(mat);
+  spriteCache[key] = sp;
+  return sp.clone();
+}
+
+// ============ Heart group ============
+const heartGroup = new THREE.Group();
+scene.add(heartGroup);
+
+// parametric heart point
+function heartPoint(t, zOffset, scaleZ){
+  const x = 16*Math.pow(Math.sin(t),3);
+  const y = 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
+  return new THREE.Vector3(x*scaleZ, y*scaleZ, zOffset);
+}
+
+const heartSprites = []; // {sprite, target, start}
+function buildHeart(){
+  const N_RINGS = 7;        // số "lát" theo trục Z
+  const N_PER_RING = 70;    // số chữ mỗi lát
+  const DEPTH = 6;
+  for(let r=0; r<N_RINGS; r++){
+    const zRatio = (r/(N_RINGS-1)) - 0.5; // -0.5..0.5
+    const z = zRatio * DEPTH;
+    // teardrop-ish thickness: fuller in middle, smaller at edges
+    const thick = Math.cos(zRatio*Math.PI)*0.55 + 0.45; // 0.45..1
+    for(let i=0;i<N_PER_RING;i++){
+      const t = (i/N_PER_RING)*Math.PI*2;
+      const p = heartPoint(t, z, 0.55*thick);
+      const sp = makeTextSprite("Giang", "#ffffff", "#ff4d8d", 128);
+      sp.scale.set(1.6, 1.6, 1.6);
+      // start position: random off-screen
+      const ang = Math.random()*Math.PI*2;
+      const rad = 60 + Math.random()*40;
+      sp.position.set(Math.cos(ang)*rad, Math.sin(ang)*rad, (Math.random()-0.5)*40);
+      sp.material.opacity = 0;
+      heartGroup.add(sp);
+      heartSprites.push({sp, target:p, start:sp.position.clone(), delay: Math.random()*1.2});
+    }
+  }
+}
+
+// Ring of text under the heart: "anh yêu em ❤ em đồng ý làm ny anh nha ❤"
+const ringGroup = new THREE.Group();
+ringGroup.position.y = -13;
+heartGroup.add(ringGroup);
+function buildRingText(){
+  const phrase = "anh yêu em  em đồng ý làm ny anh nha  ";
+  const chars = phrase.split("");
+  const R = 11;
+  for(let i=0;i<chars.length;i++){
+    const ch = chars[i];
+    if(ch===" ") continue;
+    const a = (i/chars.length)*Math.PI*2;
+    const sp = makeTextSprite(ch, "#fff", "#ff80b3", 96);
+    sp.scale.set(1.4,1.4,1.4);
+    sp.position.set(Math.cos(a)*R, 0, Math.sin(a)*R);
+    sp.userData.angle = a;
+    sp.material.opacity = 0;
+    ringGroup.add(sp);
+  }
+}
+
+// ============ Hand + Ring scene ============
+const handGroup = new THREE.Group();
+handGroup.visible = false;
+scene.add(handGroup);
+
+// Build a stylised woman's hand with 5 fingers using "Giang" sprites along cylinder/capsule segments
+function buildHand(){
+  // finger definitions: base (x,y), length, angle (from +Y), segments
+  // ring finger = index 3 (áp út)
+  const fingers = [
+    // thumb (ngón cái) - shorter, angled out
+    {base:[-3.2,-1.5], len:5.5, angle:-0.9, seg:5, radius:0.55, name:'thumb'},
+    // index (trỏ)
+    {base:[-1.8, 2.2], len:7.5, angle:-0.15, seg:7, radius:0.5, name:'index'},
+    // middle (giữa)
+    {base:[-0.2, 2.6], len:8.4, angle:-0.02, seg:8, radius:0.5, name:'middle'},
+    // ring (áp út)
+    {base:[ 1.4, 2.3], len:7.8, angle: 0.08, seg:7, radius:0.5, name:'ring'},
+    // pinky (út)
+    {base:[ 2.9, 1.5], len:5.8, angle: 0.25, seg:5, radius:0.45, name:'pinky'},
+  ];
+
+  // palm: fill area below fingers with sprites
+  const palmW = 7.5, palmH = 5.5;
+  for(let i=0;i<140;i++){
+    const x = (Math.random()-0.5)*palmW;
+    // ellipse-ish palm
+    const yr = Math.random();
+    const y = -yr*palmH - 0.2;
+    const widthAtY = palmW*(1 - yr*0.35);
+    const xx = (Math.random()-0.5)*widthAtY;
+    // slight 3D dome
+    const z = Math.cos((xx/palmW)*Math.PI)*0.8 + (Math.random()-0.5)*0.4;
+    const sp = makeTextSprite("Giang","#fff","#ff4d8d",96);
+    sp.scale.set(0.9,0.9,0.9);
+    sp.position.set(xx, y, z);
+    handGroup.add(sp);
+  }
+
+  // fingers
+  const ringFingerTip = new THREE.Vector3();
+  const ringFingerBase = new THREE.Vector3();
+  fingers.forEach(f=>{
+    const baseV = new THREE.Vector3(f.base[0], f.base[1], 0);
+    const dir = new THREE.Vector3(Math.sin(f.angle), Math.cos(f.angle), 0).normalize();
+    const tip = baseV.clone().addScaledVector(dir, f.len);
+    if(f.name==='ring'){ ringFingerTip.copy(tip); ringFingerBase.copy(baseV); }
+    // sprites along the finger surface (cylinder)
+    const COUNT = 60;
+    for(let i=0;i<COUNT;i++){
+      const t = i/COUNT;
+      const along = baseV.clone().lerp(tip, t);
+      // perpendicular ring
+      const perp = new THREE.Vector3(-dir.y, dir.x, 0);
+      const ang = Math.random()*Math.PI*2;
+      const r = f.radius*(1 - t*0.15);
+      const off = perp.clone().multiplyScalar(Math.cos(ang)*r)
+                .add(new THREE.Vector3(0,0,Math.sin(ang)*r));
+      const pos = along.add(off);
+      const sp = makeTextSprite("Giang","#fff","#ff4d8d",96);
+      sp.scale.set(0.75,0.75,0.75);
+      sp.position.copy(pos);
+      handGroup.add(sp);
+    }
+    // nail dot (small white tip)
+    const nail = makeTextSprite("•","#fff","#ffffff",64);
+    nail.scale.set(0.7,0.7,0.7);
+    nail.position.copy(tip);
+    handGroup.add(nail);
+  });
+
+  // Ring (nhẫn) — torus of "Phúc" sprites, starts at finger tip, slides to base
+  const ringContainer = new THREE.Group();
+  handGroup.add(ringContainer);
+  const N_RING = 28;
+  const ringRadius = 0.85;
+  for(let i=0;i<N_RING;i++){
+    const a = (i/N_RING)*Math.PI*2;
+    const sp = makeTextSprite("Phúc","#fff","#ffd700",96);
+    sp.scale.set(0.55,0.55,0.55);
+    sp.position.set(Math.cos(a)*ringRadius, 0, Math.sin(a)*ringRadius);
+    ringContainer.add(sp);
+  }
+  // store ring path
+  handGroup.userData.ring = ringContainer;
+  handGroup.userData.ringStart = ringFingerTip.clone();
+  handGroup.userData.ringEnd = ringFingerBase.clone().lerp(ringFingerTip, 0.25); // gốc ngón
+  ringContainer.position.copy(handGroup.userData.ringStart);
+
+  // center the hand
+  handGroup.position.set(0, 2, 0);
+  handGroup.scale.set(1.1,1.1,1.1);
+}
+
+// ============ Lyrics ============
+const lyricsEl = document.getElementById('lyrics');
+let lyricsStartAt = 0;
+let currentLyricIdx = -1;
+let lyricsDone = false;
+
+function updateLyrics(now){
+  if(lyricsDone) return;
+  const t = (now - lyricsStartAt)/1000;
+
+  // Tìm câu đang trong khoảng [in, out)
+  let idx = -1;
+  for(let i=0;i<LYRICS.length;i++){
+    if(t >= LYRICS[i].in && t < LYRICS[i].out){ idx = i; break; }
+  }
+
+  if(idx === -1){
+    // Không có câu nào đang hiện → ẩn
+    if(currentLyricIdx !== -1){
+      lyricsEl.classList.remove('show');
+      currentLyricIdx = -1;
+    }
+    // Hết bài (đã qua out của câu cuối) → sang chọn
+    const last = LYRICS[LYRICS.length-1];
+    if(t >= last.out + 0.3){
+      lyricsDone = true;
+      setTimeout(showChoice, 600);
+    }
+    return;
+  }
+
+  if(idx !== currentLyricIdx){
+    currentLyricIdx = idx;
+    lyricsEl.classList.remove('show');
+    setTimeout(()=>{
+      lyricsEl.textContent = LYRICS[idx].text;
+      lyricsEl.classList.add('show');
+    }, 180);
+  }
+}
+
+// ============ State machine ============
+let state = "INIT"; // INIT, HEART, CHOICE, HAND
+let heartStartTime = 0;
+
+const startBtn = document.getElementById('startBtn');
+const startWrap = document.getElementById('startWrap');
+const titleEl = document.getElementById('title');
+
+function goHeart(){
+  state = "HEART";
+  startWrap.style.display = "none";
+  startAudio();
+  buildHeart();
+  buildRingText();
+  heartStartTime = performance.now();
+  lyricsStartAt = performance.now();
+  titleEl.classList.add('show');
+}
+
+startBtn.addEventListener('click', goHeart, {once:true});
+
+// ============ Choice buttons ============
+const choiceEl = document.getElementById('choice');
+const yesBtn = document.getElementById('yesBtn');
+const noBtn  = document.getElementById('noBtn');
+
+function showChoice(){
+  state = "CHOICE";
+  choiceEl.classList.add('show');
+}
+
+function moveNo(){
+  const pad = 80;
+  const w = window.innerWidth, h = window.innerHeight;
+  const x = pad + Math.random()*(w - pad*2);
+  const y = pad + Math.random()*(h - pad*2);
+  noBtn.style.left = x+'px';
+  noBtn.style.top = y+'px';
+  noBtn.style.transform = 'translate(-50%,-50%) rotate('+((Math.random()-0.5)*30)+'deg)';
+}
+['mouseenter','mouseover','touchstart','focus','pointerenter','pointerdown'].forEach(ev=>{
+  noBtn.addEventListener(ev, (e)=>{ e.preventDefault(); moveNo(); }, {passive:false});
+});
+noBtn.addEventListener('click', (e)=>{ e.preventDefault(); moveNo(); });
+
+yesBtn.addEventListener('click', ()=>{
+  if(state!=="CHOICE") return;
+  state = "HAND";
+  choiceEl.classList.remove('show');
+  // hide heart, show hand
+  heartGroup.visible = false;
+  buildHand();
+  handGroup.visible = true;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 0.6;
+  // reset camera a bit
+  camera.position.set(0,2,28);
+  controls.target.set(0,2,0);
+  controls.update();
+  handAnimStart = performance.now();
+});
+
+// ============ Hand ring animation ============
+let handAnimStart = 0;
+const finalMsg = document.getElementById('finalMsg');
+let finalShown = false;
+function updateHand(now){
+  if(state!=="HAND") return;
+  const ring = handGroup.userData.ring;
+  if(!ring) return;
+  const t = Math.min(1, (now - handAnimStart)/3000);
+  const ease = 1 - Math.pow(1-t, 3);
+  const start = handGroup.userData.ringStart;
+  const end   = handGroup.userData.ringEnd;
+  ring.position.lerpVectors(start, end, ease);
+  ring.rotation.y = ease*Math.PI*2;
+  if(t>=1 && !finalShown){
+    finalShown = true;
+    finalMsg.classList.add('show');
+  }
+}
+
+// ============ Animation loop ============
+const clock = new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const now = performance.now();
+  const dt = clock.getDelta();
+
+  // Heart fly-in
+  if(state==="HEART" || state==="CHOICE"){
+    const elapsed = (now - heartStartTime)/1000;
+    heartSprites.forEach(o=>{
+      const tt = Math.min(1, Math.max(0, (elapsed - o.delay)/1.6));
+      const ease = 1 - Math.pow(1-tt, 3);
+      o.sp.position.lerpVectors(o.start, o.target, ease);
+      o.sp.material.opacity = ease;
+    });
+    // ring text fade in after heart formed
+    ringGroup.rotation.y += dt*0.5;
+    ringGroup.children.forEach(c=>{
+      if(c.material) c.material.opacity = Math.min(1, Math.max(0,(elapsed-2.2)/1.2));
+    });
+    updateLyrics(now);
+  }
+
+  updateHand(now);
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
